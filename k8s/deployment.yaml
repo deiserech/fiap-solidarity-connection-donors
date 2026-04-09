@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fiap-cloud-games-users
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fiap-cloud-games-users
+  template:
+    metadata:
+      labels:
+        app: fiap-cloud-games-users
+    spec:
+      containers:
+        - name: fiap-cloud-games-users
+          image: fiapcloudgamest04acr.azurecr.io/fiap-cloud-games-users:latest
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 10
+            successThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 10
+            successThreshold: 1
+          resources:
+            requests:
+              cpu: 50m
+              memory: 512Mi
+            limits:
+              cpu: 200m
+              memory: 600Mi
+          env:
+            - name: ConnectionStrings__DefaultConnection
+              valueFrom:
+                secretKeyRef:
+                  name: fiap-users-secret
+                  key: ConnectionStrings__DefaultConnection
+            - name: ServiceBus__ConnectionString
+              valueFrom:
+                secretKeyRef:
+                  name: fiap-shared-secret
+                  key: ServiceBus__ConnectionString
+            - name: NEW_RELIC_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: fiap-shared-secret
+                  key: NEW_RELIC_LICENSE_KEY
+            - name: Elasticsearch__Uri
+              valueFrom:
+                configMapKeyRef:
+                  name: users-api-config
+                  key: Elasticsearch__Uri
+            - name: Elasticsearch__IndexName
+              valueFrom:
+                configMapKeyRef:
+                  name: users-api-config
+                  key: Elasticsearch__IndexName
+            - name: JwtSettings__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  name: fiap-users-secret
+                  key: JwtSettings__SecretKey
+            - name: JwtSettings__Issuer
+              valueFrom:
+                secretKeyRef:
+                  name: fiap-users-secret
+                  key: JwtSettings__Issuer
+            - name: JwtSettings__Audience
+              valueFrom:
+                secretKeyRef:
+                  name: fiap-users-secret
+                  key: JwtSettings__Audience
+

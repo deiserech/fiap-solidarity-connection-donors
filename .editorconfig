@@ -1,0 +1,13 @@
+root = true
+
+[*.cs]
+charset = utf-8
+end_of_line = lf
+
+[*.json]
+charset = utf-8
+end_of_line = lf
+
+[*.txt]
+charset = utf-8
+end_of_line = lf
