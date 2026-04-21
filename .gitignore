@@ -58,7 +58,7 @@ nunit-*.xml
 **/coverage-report/
 
 # Ignore local appsettings files (contain secrets / environment-specific settings)
-**/appsettings*.json
-**/appsettings*.Development.json
+**/appsettings.Development.json
 __azurite_db_queue__.json
 __azurite_db_queue_extent__.json
+/src/SolidarityConnection.Api/Properties/launchSettings.json

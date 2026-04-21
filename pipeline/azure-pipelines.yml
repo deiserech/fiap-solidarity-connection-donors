@@ -14,7 +14,7 @@ pool:
 
 variables:
   buildConfiguration: "Release"
-  azureSubscription: 'PosFiapT4'
+  azureSubscription: 'PosFiap'
   containerRegistry: 'solidarityconnection-acr-connection'
   dockerRepository: 'solidarity-connection'
   resourceGroup: 'rg-solidarityconnection-core'

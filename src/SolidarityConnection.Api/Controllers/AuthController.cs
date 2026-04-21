@@ -1,8 +1,8 @@
-﻿using SolidarityConnection.Application.DTOs;
-using SolidarityConnection.Application.Interfaces.Services;
-using SolidarityConnection.Application.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SolidarityConnection.Application.DTOs;
+using SolidarityConnection.Application.Interfaces.Services;
+using SolidarityConnection.Application.Utils;
 
 namespace SolidarityConnection.Api.Controllers
 {
@@ -10,6 +10,7 @@ namespace SolidarityConnection.Api.Controllers
     /// Controller responsável pela autenticaÃ§Ã£o e registro de usuários
     /// </summary>
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     [Produces("application/json")]
     public class AuthController : ControllerBase
@@ -30,10 +31,11 @@ namespace SolidarityConnection.Api.Controllers
         /// <response code="400">Dados de entrada inválidos</response>
         /// <response code="401">Email ou senha inválidos</response>
         [HttpPost("login")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-       public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
+        public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
             if (!ModelState.IsValid)
             {
@@ -41,7 +43,7 @@ namespace SolidarityConnection.Api.Controllers
             }
 
             var result = await _authService.Login(loginDto);
-            
+
             if (result == null)
             {
                 return Unauthorized(new { message = "Email ou senha inválidos" });
@@ -58,6 +60,7 @@ namespace SolidarityConnection.Api.Controllers
         /// <response code="200">Doador registrado com sucesso</response>
         /// <response code="400">Dados inválidos, senha nÃ£o atende aos critÃ©rios ou email já está em uso</response>
         [HttpPost("register")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register([FromBody] RegisterDonorRequest registerDto)
@@ -66,7 +69,7 @@ namespace SolidarityConnection.Api.Controllers
             {
                 return BadRequest(ModelState);
             }
- 
+
             var errors = ValidationHelper.ValidateRegisterEntries(registerDto.Password, registerDto.Email, registerDto.Cpf);
             if (errors.Any())
             {
@@ -78,7 +81,7 @@ namespace SolidarityConnection.Api.Controllers
             }
 
             var result = await _authService.Register(registerDto);
-            
+
             if (result == null)
             {
                 return BadRequest(new { message = "Email or CPF already in use" });

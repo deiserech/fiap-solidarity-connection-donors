@@ -1,4 +1,4 @@
-﻿using Azure.Messaging.ServiceBus;
+using Azure.Messaging.ServiceBus;
 using SolidarityConnection.Api.BackgroundServices;
 using SolidarityConnection.Api.Extensions;
 using SolidarityConnection.Api.Middlewares;
@@ -25,15 +25,10 @@ builder.Services.AddSwagger();
 builder.Services.AddOpenTel(configuration);
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
-builder.Services.AddAuthorization(options =>
-{
-    options.FallbackPolicy = new AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
-        .Build();
-});
 
+var dbConnectionString = configuration.GetConnectionString("DefaultConnection") ?? "";  
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection") ?? ""));
+    options.UseSqlServer(dbConnectionString));
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
