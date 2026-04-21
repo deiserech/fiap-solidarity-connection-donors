@@ -260,6 +260,10 @@ Criterio de pronto:
 
 - Deploy funcional em Kubernetes + telemetria visivel + pipeline verde.
 
+Guia pratico para execucao local no Kubernetes (Docker Desktop):
+
+- `others/docs/validacao-kubernetes-docker-desktop.md`
+
 ## Plano de testes (enxuto)
 
 1. Testes de unidade (dominio/aplicacao):
