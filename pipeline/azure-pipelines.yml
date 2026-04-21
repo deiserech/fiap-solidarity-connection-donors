@@ -1,4 +1,4 @@
-﻿trigger:
+trigger:
   branches:
     include:
       - develop
@@ -10,17 +10,17 @@ pr:
       - main
 
 pool:
-  name: FiapCloudGames
+  name: SolidarityConnection
 
 variables:
   buildConfiguration: "Release"
   azureSubscription: 'PosFiapT4'
-  containerRegistry: 'fiapcloudgames-t04-acr-connection'
-  dockerRepository: 'fiap-cloud-games-users'
-  resourceGroup: 'rg-fiapcloudgamest04-core'
-  testsArtifactName: 'fiap-cloud-games-binaries'
+  containerRegistry: 'solidarityconnection-acr-connection'
+  dockerRepository: 'solidarity-connection'
+  resourceGroup: 'rg-solidarityconnection-core'
+  testsArtifactName: 'solidarity-connection-binaries'
   testsArtifactPath: '$(Pipeline.Workspace)/test-binaries'
-  aksClusterName: 'fiapcloudgamest04-aks'
+  aksClusterName: 'solidarityconnection-aks'
 
 stages:
   - stage: Build
@@ -34,17 +34,17 @@ stages:
               packageType: "sdk"
               version: "8.x"
 
-          - script: dotnet restore FiapCloudGames.Users.sln
+          - script: dotnet restore SolidarityConnection.sln
             displayName: "Restore NuGet packages"
 
           - task: DotNetCoreCLI@2
             displayName: "Build Solution"
             inputs:
               command: 'build'
-              projects: 'FiapCloudGames.Users.sln'
+              projects: 'SolidarityConnection.sln'
               arguments: '--configuration $(buildConfiguration) --no-restore'
 
-          - publish: $(Build.SourcesDirectory)/tests/SolidarityConnection.Donors.Identity.Tests/bin/Release/net8.0/
+          - publish: $(Build.SourcesDirectory)/tests/SolidarityConnection.Tests/bin/Release/net8.0/
             displayName: "Publish Binaries"
             artifact: $(testsArtifactName)
 
@@ -64,7 +64,7 @@ stages:
             displayName: "Run Unit Tests"
             inputs:
               command: 'test'
-              projects: '$(testsArtifactPath)/FiapCloudGames.Users.Tests.dll'
+              projects: '$(testsArtifactPath)/SolidarityConnection.Tests.dll'
               arguments: '--no-build --collect:"XPlat Code Coverage"'
               testRunTitle: 'Test'
 
@@ -80,7 +80,7 @@ stages:
               inputs:
                 command: build
                 repository: $(dockerRepository)
-                Dockerfile: src/SolidarityConnection.Donors.Identity.Api/Dockerfile
+                Dockerfile: src/SolidarityConnection.Api/Dockerfile
                 buildContext: $(Build.SourcesDirectory)
                 tags: |
                   latest

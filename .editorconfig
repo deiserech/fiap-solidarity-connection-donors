@@ -11,3 +11,7 @@ end_of_line = lf
 [*.txt]
 charset = utf-8
 end_of_line = lf
+
+[*.{md,yml,yaml,sln,csproj,props,targets,ps1,sh,xml}]
+charset = utf-8
+end_of_line = lf

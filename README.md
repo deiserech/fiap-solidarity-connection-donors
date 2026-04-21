@@ -1,6 +1,6 @@
-﻿# FiapCloudGames.Users
+# SolidarityConnection
 
-API de Users do projeto FiapCloudGames. Responsavel por cadastro, autenticacao, biblioteca e integracao com Service Bus e Elasticsearch.
+API de Users do projeto SolidarityConnection. Responsavel por cadastro, autenticacao, biblioteca e integracao com Service Bus.
 
 ## Conteudo
 
@@ -20,7 +20,6 @@ Este servico expoe endpoints REST para operacoes de usuarios, autenticacao e bib
 
 - SQL Server para persistencia
 - Azure Service Bus para mensageria
-- Elasticsearch para historico e sugestoes (quando habilitado)
 
 ## Arquitetura e fluxo
 
@@ -29,7 +28,6 @@ flowchart LR
   client[Cliente] --> api[Users API]
   api --> sql[SQL Server]
   api --> sb[Azure Service Bus]
-  api --> es[Elasticsearch]
   sb --> worker[Consumers]
   worker --> es
 ```
@@ -42,7 +40,6 @@ sequenceDiagram
   participant API as Users API
   participant DB as SQL Server
   participant SB as Service Bus
-  participant ES as Elasticsearch
   participant WK as Consumers
 
   C->>API: Requisicao (Cadastro/Login/Biblioteca)
@@ -56,12 +53,12 @@ sequenceDiagram
 
 ## Estrutura do repositorio
 
- src/SolidarityConnection.Donors.Identity.Api: API Web
- src/SolidarityConnection.Donors.Identity.Application: regras de negocio
- src/SolidarityConnection.Donors.Identity.Domain: modelos de dominio
- src/SolidarityConnection.Donors.Identity.Infrastructure: persistencia e integracoes
- src/SolidarityConnection.Donors.Identity.Shared: contratos e utilitarios
- tests/SolidarityConnection.Donors.Identity.Tests: testes automatizados
+ src/SolidarityConnection.Api: API Web
+ src/SolidarityConnection.Application: regras de negocio
+ src/SolidarityConnection.Domain: modelos de dominio
+ src/SolidarityConnection.Infrastructure: persistencia e integracoes
+ src/SolidarityConnection.Shared: contratos e utilitarios
+ tests/SolidarityConnection.Tests: testes automatizados
 - k8s/: manifests Kubernetes
 - pipeline/: Azure Pipelines
 
@@ -77,19 +74,19 @@ sequenceDiagram
 1) Restaurar dependencias:
 
 ```bash
-dotnet restore FiapCloudGames.Users.sln
+dotnet restore SolidarityConnection.sln
 ```
 
 2) Executar a API:
 
 ```bash
-dotnet run --project src/SolidarityConnection.Donors.Identity.Api/FiapCloudGames.Users.Api.csproj
+dotnet run --project src/SolidarityConnection.Api/SolidarityConnection.Api.csproj
 ```
 
 ## Testes
 
 ```bash
-dotnet test FiapCloudGames.Users.sln -c Release
+dotnet test SolidarityConnection.sln -c Release
 ```
 
 ## Docker
@@ -97,13 +94,13 @@ dotnet test FiapCloudGames.Users.sln -c Release
 Build da imagem:
 
 ```bash
-docker build -f src/SolidarityConnection.Donors.Identity.Api/Dockerfile -t fiap-cloud-games-users:local .
+docker build -f src/SolidarityConnection.Api/Dockerfile -t solidarity-connection:local .
 ```
 
 Executar localmente:
 
 ```bash
-docker run -p 8080:80 fiap-cloud-games-users:local
+docker run -p 8080:80 solidarity-connection:local
 ```
 
 ## Kubernetes (AKS)
@@ -122,7 +119,7 @@ kubectl apply -f k8s/hpa.yaml
 Verificar rollout:
 
 ```bash
-kubectl rollout status deployment/fiap-cloud-games-users
+kubectl rollout status deployment/solidarity-connection
 ```
 
 ## Arquitetura no Kubernetes
@@ -137,7 +134,6 @@ flowchart TB
   end
   pod --> sql[SQL Server]
   pod --> sb[Service Bus]
-  pod --> es[Elasticsearch]
 ```
 
 ## Configuracoes
@@ -146,8 +142,6 @@ Variaveis principais (exemplos):
 
 - ConnectionStrings__DefaultConnection (Secret)
 - ServiceBus__ConnectionString (Secret)
-- Elasticsearch__Uri (ConfigMap)
-- Elasticsearch__IndexName (ConfigMap)
 - JwtSettings__SecretKey (Secret)
 - JwtSettings__Issuer (Secret)
 - JwtSettings__Audience (Secret)

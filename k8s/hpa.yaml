@@ -1,12 +1,12 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: fiap-cloud-games-users
+  name: solidarity-connection
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: fiap-cloud-games-users
+    name: solidarity-connection
   minReplicas: 1
   maxReplicas: 5
   behavior:

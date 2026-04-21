@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: fiap-cloud-games-users
+  name: solidarity-connection
   labels:
-    app: fiap-cloud-games-users
+    app: solidarity-connection
 spec:
   type: LoadBalancer
   selector:
-    app: fiap-cloud-games-users
+    app: solidarity-connection
   ports:
     - name: http
       port: 8083

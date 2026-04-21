@@ -53,12 +53,12 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 /Es.md
-/Screenshot 2025-08-04 200533.png
 /.vs
-/clean.ps1
-tests/FiapCloudGames.Tests/coverage-report/
+**/.vs
+**/coverage-report/
 
 # Ignore local appsettings files (contain secrets / environment-specific settings)
 **/appsettings*.json
 **/appsettings*.Development.json
-src/FiapCloudGames.Api/appsettings.json
+__azurite_db_queue__.json
+__azurite_db_queue_extent__.json

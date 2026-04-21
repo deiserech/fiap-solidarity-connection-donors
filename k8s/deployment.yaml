@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fiap-cloud-games-users
+  name: solidarity-connection
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: fiap-cloud-games-users
+      app: solidarity-connection
   template:
     metadata:
       labels:
-        app: fiap-cloud-games-users
+        app: solidarity-connection
     spec:
       containers:
-        - name: fiap-cloud-games-users
-          image: fiapcloudgamest04acr.azurecr.io/fiap-cloud-games-users:latest
+        - name: solidarity-connection
+          image: solidarityconnectionacr.azurecr.io/solidarity-connection:latest
           ports:
             - containerPort: 80
           readinessProbe:
@@ -58,16 +58,6 @@ spec:
                 secretKeyRef:
                   name: fiap-shared-secret
                   key: NEW_RELIC_LICENSE_KEY
-            - name: Elasticsearch__Uri
-              valueFrom:
-                configMapKeyRef:
-                  name: users-api-config
-                  key: Elasticsearch__Uri
-            - name: Elasticsearch__IndexName
-              valueFrom:
-                configMapKeyRef:
-                  name: users-api-config
-                  key: Elasticsearch__IndexName
             - name: JwtSettings__SecretKey
               valueFrom:
                 secretKeyRef:

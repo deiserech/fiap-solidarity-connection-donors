@@ -3,9 +3,7 @@ kind: ConfigMap
 metadata:
   name: users-api-config
   labels:
-    app: fiap-cloud-games-users
+    app: solidarity-connection
 data:
-  ASPNETCORE_ENVIRONMENT: "Devlopment"
+  ASPNETCORE_ENVIRONMENT: "Development"
   ServiceBus__UseWebSockets: "false"
-  Elasticsearch__IndexName: "users"
-  Elasticsearch__Uri: "http://20.206.68.98:9200"
