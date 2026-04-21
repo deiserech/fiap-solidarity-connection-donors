@@ -110,6 +110,8 @@ stages:
                 scriptLocation: 'inlineScript'
                 inlineScript: |
                   az aks get-credentials --resource-group $(resourceGroup) --name $(aksClusterName)
+                  kubectl apply -f k8s/users-secret.yaml
+                  kubectl apply -f k8s/shared-secret.yaml
                   kubectl apply -f k8s/configmap.yaml
                   kubectl apply -f k8s/service.yaml
                   kubectl apply -f k8s/deployment.yaml

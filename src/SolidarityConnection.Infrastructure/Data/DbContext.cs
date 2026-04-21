@@ -9,6 +9,7 @@ namespace SolidarityConnection.Infrastructure.Data
     
             public DbSet<User> Users { get; set; }
             public DbSet<Campaign> Campaigns { get; set; }
+            public DbSet<ProcessedDonation> ProcessedDonations { get; set; }
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {

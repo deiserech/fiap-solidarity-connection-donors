@@ -8,7 +8,7 @@ namespace SolidarityConnection.Api.Extensions
 {
     public static class OpenTelemetryServiceCollectionExtensions
     {
-        public static IServiceCollection AddOpenTel(this IServiceCollection services)
+        public static IServiceCollection AddOpenTel(this IServiceCollection services, IConfiguration configuration)
         {
             var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown";
 
@@ -26,29 +26,35 @@ namespace SolidarityConnection.Api.Extensions
                         .AddAspNetCoreInstrumentation()
                         .AddHttpClientInstrumentation()
                         .AddSqlClientInstrumentation()
-                        .AddOtlpExporter(ConfigureOtlpExporter);
+                        .AddOtlpExporter(options => ConfigureOtlpExporter(options, configuration));
                 })
                 .WithLogging(builder =>
                 {
-                    builder.AddOtlpExporter(ConfigureOtlpExporter);
+                    builder.AddOtlpExporter(options => ConfigureOtlpExporter(options, configuration));
                 })
                 .WithMetrics(builder =>
                 {
                     builder
                         .AddAspNetCoreInstrumentation()
                         .AddRuntimeInstrumentation()
-                        .AddOtlpExporter(ConfigureOtlpExporter);
+                        .AddOtlpExporter(options => ConfigureOtlpExporter(options, configuration));
                 });
 
             return services;
         }
 
-        private static void ConfigureOtlpExporter(OtlpExporterOptions options)
+        private static void ConfigureOtlpExporter(OtlpExporterOptions options, IConfiguration configuration)
         {
-            options.Endpoint = new Uri("https://otlp.nr-data.net:4317");
-            options.Protocol = OtlpExportProtocol.Grpc;
+            var endpoint = configuration["NewRelic:OtlpEndpoint"] ?? "https://otlp.nr-data.net:4317";
+            var protocol = configuration["NewRelic:Protocol"];
 
-            var newRelicKey = Environment.GetEnvironmentVariable("NEW_RELIC_LICENSE_KEY");
+            options.Endpoint = new Uri(endpoint);
+            options.Protocol = string.Equals(protocol, "http/protobuf", StringComparison.OrdinalIgnoreCase)
+                ? OtlpExportProtocol.HttpProtobuf
+                : OtlpExportProtocol.Grpc;
+
+            var newRelicKey = configuration["NewRelic:LicenseKey"]
+                ?? Environment.GetEnvironmentVariable("NEW_RELIC_LICENSE_KEY");
             if (!string.IsNullOrWhiteSpace(newRelicKey))
             {
                 options.Headers = $"api-key={newRelicKey}";

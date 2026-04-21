@@ -1,197 +1,163 @@
-# Arquitetura de Microsservicos - Donors/Campaigns e Donations
+# Arquitetura de Microsservicos - Conexao Solidaria (MVP)
 
 ## Objetivo
 
-Este documento descreve uma arquitetura com dois microsservicos para atender ao requisito do hackathon:
+Definir a arquitetura minima para atender aos requisitos obrigatorios do hackathon, sem adicionar escopo extra.
 
-- `donors/campaigns`: responsavel por autenticao, cadastro de doadores e gestao de campanhas.
-- `donations`: responsavel por receber e processar doacoes de forma assincrona.
+## Padronizacao de termos
 
-A separacao reduz acoplamento, deixa o processamento de doacoes resiliente e permite que cada servico tenha seu proprio banco de dados.
+- User: conta tecnica autenticavel do sistema.
+- Doador: persona de negocio representada por um User com role `Doador`.
+- GestorONG: persona de negocio representada por um User com role `GestorONG`.
 
-## Visao geral
+Regra de escrita deste documento:
 
-O fluxo principal e este:
+- Quando o assunto for autenticacao, autorizacao e modelo de conta, usar o termo User.
+- Quando o assunto for processo de doacao, usar o termo Doador.
 
-1. O usuario envia uma doacao para o servico `donations` ou para a API de dominio.
-2. O servico grava a transacao no seu proprio banco.
-3. O servico publica um evento em um broker de mensageria.
-4. O outro microsservico consome o evento e atualiza o dado derivado no banco que ele possui.
+## Glossario rapido
 
-O ponto mais importante e que nenhum microsservico escreve diretamente no banco do outro. Cada servico e dono do proprio armazenamento.
+- User e Doador referenciam a mesma pessoa no MVP; a diferenca esta no contexto (tecnico vs. negocio).
 
-## Diagrama
+## Requisitos funcionais (escopo do MVP)
+
+1. Autenticacao com JWT e autorizacao por roles `GestorONG` e `Doador`.
+2. Gestao de campanhas (somente `GestorONG`): criar e editar campanha com:
+   - `Titulo`, `Descricao`, `DataInicio`, `DataFim`, `MetaFinanceira`, `Status` (`Ativa`, `Concluida`, `Cancelada`).
+   - Regras: `DataFim` nao pode estar no passado e `MetaFinanceira` deve ser maior que zero.
+3. Cadastro publico de doador com:
+   - `NomeCompleto`, `Email` unico, `CPF` valido, `Senha` com hash (ex.: BCrypt).
+4. Painel de transparencia publico:
+   - listar somente campanhas `Ativa`.
+   - retornar `Titulo`, `MetaFinanceira`, `ValorTotalArrecadado`.
+5. Processo de doacao (doador logado):
+   - enviar `IdCampanha` e `ValorDoacao`.
+   - regra: nao permitir doacao para campanha `Concluida` ou `Cancelada`.
+
+## Requisitos tecnicos obrigatorios
+
+1. Pelo menos dois microsservicos distintos.
+2. Comunicacao assincrona com broker (Azure Service Bus).
+3. A API nao atualiza `ValorTotalArrecadado` diretamente no recebimento da doacao.
+4. Um Worker/Consumer processa o evento de doacao e atualiza o total arrecadado.
+5. Execucao em Kubernetes com manifestos `Deployment`, `Service` e `ConfigMap`.
+6. Observabilidade com endpoint de saude/metricas e dashboard no New Relic com dados reais.
+7. Pipeline CI/CD acionado em push na branch principal, com build .NET e geracao de imagem Docker.
+
+## Arquitetura minima proposta
+
+### Microsservico 1 - API (Usuarios e Campanhas)
+
+- Responsavel por autenticacao/autorizacao, cadastro de doador, gestao de campanhas e endpoint publico de campanhas ativas.
+- Tambem expoe a API de doacao (intencao de doacao), por exemplo: `POST /doacoes` com `IdCampanha` e `ValorDoacao`.
+- Persiste dados de usuarios/campanhas em banco proprio.
+- Consome `DonationProcessedEvent` e atualiza o `TotalRaisedAmount` no proprio banco.
+
+Tabelas sugeridas (Banco API):
+
+- `users`
+   - `id` (PK)
+   - `full_name`
+   - `email` (UNIQUE)
+   - `cpf` (UNIQUE)
+   - `password_hash`
+   - `role` (`GestorONG` ou `Doador`)
+   - `created_at`
+- `campaigns`
+   - `id` (PK)
+   - `title`
+   - `description`
+   - `start_date`
+   - `end_date`
+   - `financial_goal`
+   - `status` (`Active`, `Completed`, `Canceled`)
+   - `total_raised_amount`
+   - `created_at`, `updated_at`
+
+### Microsservico 2 - Worker de Doacoes
+
+- Consome evento `DonationReceivedEvent` do broker.
+- Valida e processa a mensagem.
+- Persiste dados operacionais de doacao em banco proprio (idempotencia e status de processamento).
+- Publica `DonationProcessedEvent` no broker para que o servico de campanhas atualize seu proprio banco.
+
+Tabelas sugeridas (Banco Worker):
+
+- `donations`
+   - `id` (PK, `donationId`)
+   - `campaign_id`
+   - `donor_id`
+   - `donation_amount`
+   - `status` (`Received`, `Processing`, `Processed`, `Failed`)
+   - `attempts`
+   - `error_message`
+   - `received_at`
+   - `processed_at`
+   - `last_retry_at`
+
+### Broker de mensageria
+
+- Canal assincrono entre API e Worker.
+- Tecnologia adotada: Azure Service Bus.
+
+## Fluxo obrigatorio de doacao
+
+1. Doador autenticado envia intencao de doacao para a API.
+2. API valida regras de negocio e publica `DonationReceivedEvent` no broker.
+3. Worker consome o evento, processa a doacao e publica `DonationProcessedEvent`.
+4. API de Campanhas consome `DonationProcessedEvent` e atualiza o `TotalRaisedAmount` no proprio banco.
+5. Endpoint publico passa a refletir o valor atualizado.
+
+## Validacoes por servico
+
+- API (antes de publicar `DonationReceivedEvent`):
+   - doador autenticado;
+   - campanha existente e com status `Ativa`;
+   - `ValorDoacao` maior que zero.
+- Worker (no processamento assincrono):
+   - idempotencia (nao processar a mesma doacao duas vezes);
+   - consistencia tecnica da mensagem;
+   - controle de tentativas e falhas.
+
+## Esclarecimentos de fronteira
+
+- Onde fica a API de doacao: no Microsservico 1 (API), junto com autenticacao e campanhas.
+- O Worker atualiza banco de outro microsservico: nao. O Worker so acessa o proprio banco e se comunica por eventos.
+- Regra de ouro preservada: cada microsservico escreve apenas no proprio banco.
+- Replica de dados de campanha e doador no Worker: nao no MVP. Para manter simplicidade, o Worker nao replica entidades completas; ele processa a doacao com base no evento recebido e nas validacoes ja feitas pela API.
+- Inbox/Outbox: nao sera usado no MVP, por decisao de simplificacao do projeto de estudo.
+
+## Excecoes aprovadas para esta entrega
+
+- Broker definido como Azure Service Bus (SB).
+- Observabilidade definida com New Relic.
+- As escolhas acima foram aprovadas pelo professor para esta turma.
+
+## Diagrama (alto nivel)
 
 ```mermaid
 flowchart LR
-  U[Usuario / Doador] --> API[donors/campaigns API]
-  ADM[Gestor ONG] --> API
-
-  API --> DBC[(campaigns_db)]
-  API --> SB[(Broker de mensageria)]
-
-  DON[donations service] --> DBD[(donations_db)]
-  DON --> SB
-
-  SB --> WK[Worker / Consumer]
-  WK --> DBC
-
-  API --> OBS[Logs / Metrics / Traces]
-  DON --> OBS
+  D[Doador] --> API[Microsservico API]
+  G[GestorONG] --> API
+  API --> DB1[(Banco API)]
+    API --> BR[(Azure Service Bus)]
+  BR --> WK[Microsservico Worker]
+   WK --> DB2[(Banco Worker)]
+   WK --> BR
+   BR --> API
+  API --> OBS[Health/Metrics]
   WK --> OBS
-
-  subgraph MS1[Microsservico 1 - donors/campaigns]
-    API
-    DBC
-  end
-
-  subgraph MS2[Microsservico 2 - donations]
-    DON
-    DBD
-    WK
-  end
+   OBS --> NR[New Relic]
 ```
 
-## Responsabilidades por microsservico
+## Infraestrutura obrigatoria de entrega
 
-### 1. donors/campaigns
+- Kubernetes: `Deployment`, `Service`, `ConfigMap`.
+- Observabilidade: endpoint `/health` ou `/metrics` + dashboard New Relic.
+- CI: build .NET + geracao de imagem Docker a cada push na branch principal.
 
-Responsabilidades:
+## Fora de escopo deste plano
 
-- autenticar usuarios;
-- cadastrar doadores;
-- gerenciar campanhas;
-- expor consultas publicas de campanhas ativas;
-- manter o estado consolidado da campanha, como meta, status e total arrecadado.
-
-Banco de dados:
-
-- `campaigns_db`
-- tabelas tipicas: `users`, `campaigns`, `campaign_status_history`, `campaign_balance`.
-
-Observacao:
-
-- este e o banco dono do dominio de campanhas;
-- o worker nunca escreve em um banco compartilhado global.
-
-### 2. donations
-
-Responsabilidades:
-
-- receber a intencao de doacao;
-- validar dados basicos de entrada;
-- registrar a doacao e seu status;
-- publicar evento no broker;
-- processar retries, idempotencia e trilha de auditoria, se necessario.
-
-Banco de dados:
-
-- `donations_db`
-- tabelas tipicas: `donations`, `donation_status`, `outbox`, `processing_log`.
-
-Observacao:
-
-- este banco guarda a operacao de doacao e seu historico;
-- ele nao substitui o banco de campanhas.
-
-## Papel do worker
-
-O worker e o consumidor assincrono do evento de doacao.
-
-Ele faz o seguinte:
-
-- consome a mensagem do broker;
-- valida se a mensagem ainda nao foi processada;
-- atualiza o total arrecadado da campanha no `campaigns_db`;
-- registra o resultado do processamento;
-- em caso de erro, aplica retry e pode mandar para uma fila de falha.
-
-Na pratica, o worker nao recebe requisicao HTTP do usuario. Ele existe para tirar do caminho da API o processamento que pode falhar, atrasar ou precisar de retry.
-
-## Como ficam os bancos
-
-### Opcao recomendada
-
-- `campaigns_db` para o servico de campanhas e usuarios.
-- `donations_db` para o servico de doacoes.
-
-Vantagens:
-
-- separacao real de responsabilidades;
-- menor acoplamento;
-- cada microsservico e escalado e versionado de forma independente;
-- mais facil justificar a arquitetura na avaliacao.
-
-### O que evitar
-
-- um banco unico compartilhado pelos dois servicos;
-- o worker escrevendo diretamente no banco de usuarios;
-- um servico lendo e alterando dados internos do outro fora de contrato.
-
-## Fluxo de escrita
-
-### 1. Criacao da doacao
-
-- O cliente chama a API de doacoes.
-- O servico grava a doacao em `donations_db`.
-- O servico publica `DonationReceivedEvent` no broker.
-
-### 2. Consumo pelo worker
-
-- O worker consome o evento.
-- O worker identifica a campanha alvo.
-- O worker atualiza o total arrecadado em `campaigns_db`.
-- O worker confirma o processamento.
-
-### 3. Consulta publica
-
-- A API de campanhas le os dados consolidados do `campaigns_db`.
-- A listagem publica mostra campanha ativa, meta e total arrecadado.
-
-## Contratos de evento
-
-Exemplo de evento:
-
-```json
-{
-  "donationId": "d9a1b6c4-8f1f-4f1d-9a9f-1d5f9b8f7f20",
-  "campaignId": "b1c3f8c9-1c1b-4d5e-9d88-3b4f10f1a111",
-  "donorId": "a3c2d1e0-1234-5678-9abc-0f1e2d3c4b5a",
-  "amount": 150.00,
-  "createdAt": "2026-04-20T12:00:00Z"
-}
-```
-
-Campos importantes:
-
-- `donationId`: garante idempotencia;
-- `campaignId`: define qual campanha sera atualizada;
-- `amount`: valor que entra no acumulado;
-- `createdAt`: ajuda em auditoria e rastreabilidade.
-
-## Regras de consistencia
-
-- a API nao deve atualizar o total arrecadado diretamente no mesmo fluxo da requisicao;
-- o worker precisa ser idempotente;
-- mensagens duplicadas nao podem somar duas vezes;
-- falhas temporarias devem ser tratadas com retry;
-- falhas persistentes devem ir para DLQ ou tratamento manual.
-
-## Beneficios do desenho
-
-- atende o requisito de pelo menos dois microsservicos;
-- mostra separacao clara entre API e processamento assincrono;
-- evita banco compartilhado entre dominios;
-- permite escalar o worker separadamente da API;
-- deixa a explicacao do hackathon mais facil de defender.
-
-## Resumo executivo
-
-Se a solucao tiver apenas dois microsservicos, o desenho mais coerente e este:
-
-- `donors/campaigns` com seu proprio banco;
-- `donations` com seu proprio banco;
-- broker de mensageria para integrar os dois;
-- worker consumindo os eventos e atualizando o estado consolidado da campanha.
-
-Esse arranjo cumpre a separacao de responsabilidades e o requisito de processamento assincrono da doacao.
+- API Gateway.
+- Regras de negocio adicionais nao exigidas.
+- Componentes extras nao solicitados no enunciado.

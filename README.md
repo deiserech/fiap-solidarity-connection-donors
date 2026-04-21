@@ -83,6 +83,42 @@ dotnet restore SolidarityConnection.sln
 dotnet run --project src/SolidarityConnection.Api/SolidarityConnection.Api.csproj
 ```
 
+## Validacao local fim a fim (Core + Donations)
+
+Para a correcao do projeto com os dois microsservicos rodando localmente via Docker Compose, use o guia completo:
+
+- `others/docs/validacao-local-docker-compose.md`
+
+Resumo rapido:
+
+1) Criar `.env` na raiz com conexoes de banco, Service Bus e JWT.
+2) Criar `docker-compose.validation.yml` na raiz do repositorio Core.
+3) Executar build e subida:
+
+```bash
+docker compose -f docker-compose.validation.yml build
+docker compose -f docker-compose.validation.yml up -d
+```
+
+4) Validar health checks:
+
+```bash
+curl http://localhost:8080/health
+curl http://localhost:8081/health
+```
+
+5) Validar fluxo funcional:
+
+- login/autenticacao;
+- envio de doacao em `POST /api/donations`;
+- consulta em `GET /api/campaigns/public` com `total_raised_amount` atualizado.
+
+6) Derrubar ambiente:
+
+```bash
+docker compose -f docker-compose.validation.yml down
+```
+
 ## Testes
 
 ```bash
@@ -154,4 +190,10 @@ O pipeline esta em pipeline/azure-pipelines.yml e executa:
 - Testes
 - Build/Push da imagem
 - Deploy no AKS (branches develop e main)
+
+## Roteiro de apresentacao (15 minutos)
+
+Para o video final com a sequencia completa de demonstracao:
+
+- `others/docs/roteiro-video-apresentacao-15min.md`
 

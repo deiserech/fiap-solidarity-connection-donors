@@ -43,6 +43,31 @@ spec:
               cpu: 200m
               memory: 600Mi
           env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: users-api-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: DONATION_PROCESSED_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: users-api-config
+                  key: DONATION_PROCESSED_TOPIC
+            - name: DONATION_PROCESSED_SUBSCRIPTION
+              valueFrom:
+                configMapKeyRef:
+                  name: users-api-config
+                  key: DONATION_PROCESSED_SUBSCRIPTION
+            - name: NewRelic__OtlpEndpoint
+              valueFrom:
+                configMapKeyRef:
+                  name: users-api-config
+                  key: NewRelic__OtlpEndpoint
+            - name: NewRelic__Protocol
+              valueFrom:
+                configMapKeyRef:
+                  name: users-api-config
+                  key: NewRelic__Protocol
             - name: ConnectionStrings__DefaultConnection
               valueFrom:
                 secretKeyRef:

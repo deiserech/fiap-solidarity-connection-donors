@@ -99,6 +99,44 @@ namespace SolidarityConnection.Application.Services
             await _publisher.PublishCampaignEventAsync(campaign, true);
         }
 
+        public async Task ApplyProcessedDonationAsync(Guid donationId, Guid campaignId, decimal donationAmount, string status)
+        {
+            using var activity = Tracing.ActivitySource.StartActivity($"{nameof(CampaignService)}.ApplyProcessedDonationAsync");
+
+            if (!string.Equals(status, "Processed", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("Skipping donation {DonationId} with status {Status}", donationId, status);
+                return;
+            }
+
+            if (donationAmount <= 0)
+            {
+                _logger.LogWarning("Skipping donation {DonationId} due to non-positive amount {Amount}", donationId, donationAmount);
+                return;
+            }
+
+            var applied = await _campaignRepository.ApplyProcessedDonationAsync(
+                donationId,
+                campaignId,
+                donationAmount,
+                DateTimeOffset.UtcNow);
+
+            if (!applied)
+            {
+                _logger.LogInformation(
+                    "Donation event not applied (already processed or campaign missing). DonationId={DonationId}, CampaignId={CampaignId}",
+                    donationId,
+                    campaignId);
+                return;
+            }
+
+            _logger.LogInformation(
+                "Campaign total updated from donation event. DonationId={DonationId}, CampaignId={CampaignId}, Amount={Amount}",
+                donationId,
+                campaignId,
+                donationAmount);
+        }
+
         private static void ValidateCampaign(CampaignDto campaign)
         {
             if (campaign.GoalAmount <= 0)

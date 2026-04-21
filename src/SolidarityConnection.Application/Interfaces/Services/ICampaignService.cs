@@ -11,5 +11,6 @@ namespace SolidarityConnection.Application.Interfaces.Services
         Task<Campaign> CreateCampaignAsync(CampaignDto campaign);
         Task<Campaign> UpdateCampaignAsync(Guid id, CampaignDto campaign);
         Task DeleteCampaignAsync(Guid id);
+        Task ApplyProcessedDonationAsync(Guid donationId, Guid campaignId, decimal donationAmount, string status);
     }
 }

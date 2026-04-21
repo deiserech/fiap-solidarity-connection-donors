@@ -54,5 +54,39 @@ namespace SolidarityConnection.Infrastructure.Repositories
             _context.Campaigns.Remove(campaign);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<bool> ApplyProcessedDonationAsync(Guid donationId, Guid campaignId, decimal donationAmount, DateTimeOffset processedAt)
+        {
+            var alreadyProcessed = await _context.ProcessedDonations
+                .AsNoTracking()
+                .AnyAsync(p => p.DonationId == donationId);
+
+            if (alreadyProcessed)
+            {
+                _logger.LogInformation("Donation event already processed. DonationId={DonationId}", donationId);
+                return false;
+            }
+
+            var campaign = await _context.Campaigns.FirstOrDefaultAsync(c => c.Id == campaignId);
+            if (campaign is null)
+            {
+                _logger.LogWarning("Campaign not found while applying donation. CampaignId={CampaignId}", campaignId);
+                return false;
+            }
+
+            campaign.TotalAmountRaised += donationAmount;
+            campaign.UpdatedAt = DateTimeOffset.UtcNow;
+
+            _context.ProcessedDonations.Add(new ProcessedDonation
+            {
+                DonationId = donationId,
+                CampaignId = campaignId,
+                DonationAmount = donationAmount,
+                ProcessedAt = processedAt
+            });
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

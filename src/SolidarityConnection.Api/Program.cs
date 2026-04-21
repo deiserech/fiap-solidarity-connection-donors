@@ -1,4 +1,5 @@
 ﻿using Azure.Messaging.ServiceBus;
+using SolidarityConnection.Api.BackgroundServices;
 using SolidarityConnection.Api.Extensions;
 using SolidarityConnection.Api.Middlewares;
 using SolidarityConnection.Application.Interfaces.Publishers;
@@ -21,7 +22,7 @@ builder.Services.AddHealthChecks();
 
 builder.Services.AddSwagger();
 
-builder.Services.AddOpenTel();
+builder.Services.AddOpenTel(configuration);
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddAuthorization(options =>
@@ -41,6 +42,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICampaignRepository, CampaignRepository>();
 builder.Services.AddScoped<ICampaignService, CampaignService>();
 builder.Services.AddScoped<ICampaignEventPublisher, CampaignEventPublisher>();
+builder.Services.AddScoped<IDonationRequestedEventPublisher, DonationRequestedEventPublisher>();
 
 var sbConnectionString = configuration["ServiceBus:ConnectionString"] ?? "";
 builder.Services.Configure<ServiceBusOptions>(opts => { opts.ConnectionString = sbConnectionString; });
@@ -50,6 +52,7 @@ builder.Services.AddSingleton<IServiceBusClientWrapper, ServiceBusClientWrapper>
 builder.Services.AddSingleton<IServiceBusPublisher, ServiceBusPublisher>();
 
 builder.Services.AddScoped<IUserEventPublisher, UserEventPublisher>();
+builder.Services.AddHostedService<DonationProcessedConsumer>();
 
 var app = builder.Build();
 
