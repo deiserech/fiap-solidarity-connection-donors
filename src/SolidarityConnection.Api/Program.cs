@@ -41,17 +41,14 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddScoped<ICampaignRepository, CampaignRepository>();
 builder.Services.AddScoped<ICampaignService, CampaignService>();
-builder.Services.AddScoped<ICampaignEventPublisher, CampaignEventPublisher>();
 builder.Services.AddScoped<IDonationRequestedEventPublisher, DonationRequestedEventPublisher>();
 
 var sbConnectionString = configuration["ServiceBus:ConnectionString"] ?? "";
-builder.Services.Configure<ServiceBusOptions>(opts => { opts.ConnectionString = sbConnectionString; });
 
 builder.Services.AddSingleton(new ServiceBusClient(sbConnectionString));
 builder.Services.AddSingleton<IServiceBusClientWrapper, ServiceBusClientWrapper>();
 builder.Services.AddSingleton<IServiceBusPublisher, ServiceBusPublisher>();
 
-builder.Services.AddScoped<IUserEventPublisher, UserEventPublisher>();
 builder.Services.AddHostedService<DonationProcessedConsumer>();
 
 var app = builder.Build();

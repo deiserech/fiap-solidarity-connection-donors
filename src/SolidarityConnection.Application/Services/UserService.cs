@@ -11,14 +11,12 @@ namespace SolidarityConnection.Application.Services
     public class UserService : IUserService
     {
         private readonly IUserRepository _repo;
-        private readonly IUserEventPublisher _userEventPublisher;
         private readonly ILogger<UserService> _logger;
 
-        public UserService(IUserRepository repo, ILogger<UserService> logger, IUserEventPublisher userEventPublisher)
+        public UserService(IUserRepository repo, ILogger<UserService> logger)
         {
             _repo = repo;
             _logger = logger;
-            _userEventPublisher = userEventPublisher;
         }
 
         public async Task<User?> GetByIdAsync(Guid id)
@@ -75,7 +73,6 @@ namespace SolidarityConnection.Application.Services
             user.IsActive = false;
             user.UpdatedAt = DateTimeOffset.UtcNow;
             await _repo.UpdateAsync(user);
-            await _userEventPublisher.PublishUserEventAsync(user, true);
 
             return true;
         }

@@ -80,8 +80,6 @@ namespace SolidarityConnection.Infrastructure.Repositories
             _context.ProcessedDonations.Add(new ProcessedDonation
             {
                 DonationId = donationId,
-                CampaignId = campaignId,
-                DonationAmount = donationAmount,
                 ProcessedAt = processedAt
             });
 

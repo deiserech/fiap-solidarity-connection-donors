@@ -19,15 +19,12 @@ namespace SolidarityConnection.Application.Services
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthService> _logger;
-        private readonly IUserEventPublisher _userEventPublisher;
 
-
-        public AuthService(IUserRepository userRepository, IConfiguration configuration, ILogger<AuthService> logger, IUserEventPublisher userEventPublisher)
+        public AuthService(IUserRepository userRepository, IConfiguration configuration, ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
             _configuration = configuration;
             _logger = logger;
-            _userEventPublisher = userEventPublisher;
         }
 
         public async Task<AuthResponseDto?> Login(LoginDto loginDto)
@@ -84,7 +81,6 @@ namespace SolidarityConnection.Application.Services
             user.SetPassword(registerDto.Password);
 
             var created = await _userRepository.CreateAsync(user);
-            await _userEventPublisher.PublishUserEventAsync(created);
 
             var token = GenerateJwtToken(user);
 
@@ -104,7 +100,7 @@ namespace SolidarityConnection.Application.Services
 
             if (await _userRepository.EmailExistsAsync(request.Email))
             {
-                _logger.LogWarning("CriaÃ§Ã£o de manager falhou: email já existe: {Email}", request.Email);
+                _logger.LogWarning("Criação de manager falhou: email já existe: {Email}", request.Email);
                 return null;
             }
 
@@ -122,7 +118,6 @@ namespace SolidarityConnection.Application.Services
             manager.SetPassword(request.Password);
 
             await _userRepository.CreateAsync(manager);
-            await _userEventPublisher.PublishUserEventAsync(manager);
 
             var token = GenerateJwtToken(manager);
 

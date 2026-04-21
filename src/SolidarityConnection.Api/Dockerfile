@@ -27,6 +27,7 @@ COPY ["src/SolidarityConnection.Api/SolidarityConnection.Api.csproj", "src/Solid
 COPY ["src/SolidarityConnection.Application/SolidarityConnection.Application.csproj", "src/SolidarityConnection.Application/"]
 COPY ["src/SolidarityConnection.Domain/SolidarityConnection.Domain.csproj", "src/SolidarityConnection.Domain/"]
 COPY ["src/SolidarityConnection.Infrastructure/SolidarityConnection.Infrastructure.csproj", "src/SolidarityConnection.Infrastructure/"]
+COPY ["src/SolidarityConnection.Shared/SolidarityConnection.Shared.csproj", "src/SolidarityConnection.Shared/"]
 RUN dotnet restore "src/SolidarityConnection.Api/SolidarityConnection.Api.csproj"
 COPY . .
 WORKDIR "/src/src/SolidarityConnection.Api"

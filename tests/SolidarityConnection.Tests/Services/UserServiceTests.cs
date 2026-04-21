@@ -14,10 +14,9 @@ namespace SolidarityConnection.Tests.Services;
 public class UserServiceTests
 {
     private readonly Mock<IUserRepository> _repo = new();
-    private readonly Mock<IUserEventPublisher> _publisher = new();
     private readonly Mock<ILogger<UserService>> _logger = new();
 
-    private UserService CreateService() => new(_repo.Object, _logger.Object, _publisher.Object);
+    private UserService CreateService() => new(_repo.Object, _logger.Object);
 
     [Fact]
     public async Task GetByIdAsync_DelegatesToRepository()
@@ -109,7 +108,6 @@ public class UserServiceTests
 
         result.ShouldBeTrue();
         donor.IsActive.ShouldBeFalse();
-        _publisher.Verify(p => p.PublishUserEventAsync(It.IsAny<User>(), true), Times.Once);
     }
 
     [Fact]

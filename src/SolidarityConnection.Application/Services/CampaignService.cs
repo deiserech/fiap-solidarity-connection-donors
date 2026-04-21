@@ -12,13 +12,11 @@ namespace SolidarityConnection.Application.Services
     public class CampaignService : ICampaignService
     {
         private readonly ICampaignRepository _campaignRepository;
-        private readonly ICampaignEventPublisher _publisher;
         private readonly ILogger<CampaignService> _logger;
 
-        public CampaignService(ICampaignRepository campaignRepository, ICampaignEventPublisher publisher, ILogger<CampaignService> logger)
+        public CampaignService(ICampaignRepository campaignRepository, ILogger<CampaignService> logger)
         {
             _campaignRepository = campaignRepository;
-            _publisher = publisher;
             _logger = logger;
         }
 
@@ -62,7 +60,6 @@ namespace SolidarityConnection.Application.Services
             var created = await _campaignRepository.CreateAsync(campaign);
             _logger.LogInformation("Campaign created successfully: {Id}", created.Id);
 
-            await _publisher.PublishCampaignEventAsync(created);
             return created;
         }
 
@@ -84,7 +81,6 @@ namespace SolidarityConnection.Application.Services
             var updated = await _campaignRepository.UpdateAsync(campaign);
             _logger.LogInformation("Campaign updated successfully: {Id}", updated.Id);
 
-            await _publisher.PublishCampaignEventAsync(updated);
             return updated;
         }
 
@@ -95,8 +91,6 @@ namespace SolidarityConnection.Application.Services
                 ?? throw new ArgumentException("Campaign not found.");
 
             await _campaignRepository.DeleteAsync(campaign);
-
-            await _publisher.PublishCampaignEventAsync(campaign, true);
         }
 
         public async Task ApplyProcessedDonationAsync(Guid donationId, Guid campaignId, decimal donationAmount, string status)
