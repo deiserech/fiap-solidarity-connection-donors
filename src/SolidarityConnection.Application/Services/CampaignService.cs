@@ -139,6 +139,9 @@ namespace SolidarityConnection.Application.Services
             if (campaign.EndDate < DateTime.UtcNow)
                 throw new ArgumentException("EndDate cannot be in the past.");
 
+            if (campaign.StartDate < DateTime.UtcNow)
+                throw new ArgumentException("StartDate cant be in the past.");
+
             if (campaign.StartDate > campaign.EndDate)
                 throw new ArgumentException("StartDate must be earlier than or equal to EndDate.");
         }
